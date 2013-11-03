@@ -7,43 +7,6 @@ class GollumPagesController < ApplicationController
   before_filter :find_project, :find_wiki
   before_filter :authorize, :except => [ :preview ]
 
-  # FIXME: rid off stupid gollum prewiki wikiing
-  # wtf?  wtF? why?
-  # dirty hack
-  class MyMarkup < Gollum::Markup
-    def render(no_follow = false, encoding = nil)
-      data = @data.dup
-      begin
-        data = GitHub::Markup.render(@name, data)
-        if data.nil?
-          raise "There was an error converting #{@name} to HTML."
-        end
-      rescue Object => e
-        data = %{<p class="gollum-error">#{e.message}</p>}
-      end
-      data
-    end
-  end
-
-  class MyGollumFile < Gollum::File
-    # Find a file in the given Gollum repo.
-    #
-    # name    - The full String path.
-    # version - The String version ID to find.
-    #
-    # Returns a Gollum::File or nil if the file could not be found.
-    def find(name, version)
-      checked = name.downcase
-      map     = @wiki.tree_map_for(version, true)
-      if entry = map.detect { |entry| entry.path.downcase == checked }
-        @path    = name
-        @blob    = entry.blob(@wiki.repo)
-        @version = version.is_a?(Grit::Commit) ? version : @wiki.commit_for(version)
-        self
-      end
-    end
-  end
-
   def index
     redirect_to :action => :show, :id => "Home"
   end
@@ -59,76 +22,38 @@ class GollumPagesController < ApplicationController
   end
 
   def file 
-    ext = params[:ext]
-    @file_name = params[:id] + '.' + ext
-    dir =  @project.gollum_wiki.images_directory
-    mime_type = Mime::Type.lookup_by_extension(ext) || 'text/plain'
+    @file_name = params[:id]
+    mime_type = Mime::Type.lookup_by_extension(File.extname(@file_name)[1..-1]) || 'text/plain'
 
-    if file = @wiki.file(File.join(dir, @file_name))
-    #if file = file_search(File.join(dir, @file_name))
+    if file = @wiki.file(@file_name)
        name = file.name
        url = file.url_path
        # FIXME: content-type has 'charset=utf8' why?
        render :text => file.raw_data, :content_type=> mime_type
     else
-      render :status => 404, :inline => '404 not found:dir:' + dir +',file:' + @file_name 
+      render :status => 404, :inline => '404 not found:' + @file_name 
       return
     end
   end
 
-  def file_search(path, version = @wiki.ref)
-    file = @wiki.file_class.new(@wiki)
-    map  = @wiki.tree_map_for(version, true)
-
-    if entry = map.detect { |entry| entry.path.downcase == path }
-        file.path    = path
-        file.blob    = entry.blob(@wiki.repo)
-        file.version = version.is_a?(Grit::Commit) ? version : @wiki.commit_for(version)
-        self
-    end
-
-  end
-
-  # <form><input type=file name=upload[datafile]>
   def upload 
     if request.get?
-        # render upload.html.erb
         return
     end
-
-
 
     @user = User.current
     upload = params[:upload]
     name = upload.original_filename
     data = upload.read
-    #dir =  @wiki.page_file_dir
-    dir = @project.gollum_wiki.images_directory
+    dir = @project.gollum_wiki.directory
     
     write_file(dir, name, data)
     
-    # FIXME:XSS
-    ckeditor_num = params[:CKEditorFuncNum]
-    script =  <<-EOT
-    <script type="text/javascript">window.parent.CKEDITOR.tools.callFunction(#{ckeditor_num}, 'img/#{name}', '');</script>
-    EOT
-    if ckeditor_num
-        render :inline => script
-        #Rails.logger.fatal 'script rednered:' + script
-        return
-    else
-        flash[:notice] = name + ' uploaded'
-        redirect_to :action => :upload
-        return
-    end
+    flash[:notice] = name + ' uploaded'
+    redirect_to :action => :upload
   end
   
-  def newpage
-     return
-  end
-
   def write_file(dir, name, data)
-
     message = 'write file ' + name
     commit = { :message => message, :name => @user.name, :email => @user.mail }
     commiter = Gollum::Committer.new(@wiki, commit)
@@ -139,28 +64,18 @@ class GollumPagesController < ApplicationController
     commiter.index.add(path, data)
     commiter.commit
     @wiki.clear_cache
-
-    # fixme: do it if not bare
-    #commiter.update_working_dir( ... )
   end
 
   def edit
     @page_name = params[:id]
     @page = @wiki.page(@page_name)
-
-    if @page
-        @page_format = @page.format
-    else
-        @page_format = @project.gollum_wiki.markup_language.to_sym
-    end
+    @content = @page ? @page.text_data : ""
+    @page_format = @page ? @page.format : @project.gollum_wiki.markup_language.to_sym
   end
 
   def list
     @pages = @wiki.pages
-    tree = @wiki.tree_map_for(@wiki.ref, true)
-    dir = @project.gollum_wiki.images_directory
-    entries = tree.select { |e| e.path.index(dir) == 0 }
-    @files = entries.map { |e| e.path }
+    @files = @wiki.files
   end
 
   def update
@@ -171,18 +86,11 @@ class GollumPagesController < ApplicationController
 
     commit = { :message => params[:page][:message], :name => @user.name, :email => @user.mail }
 
-    # zkonvertuj html -> wiki if needed
-    if @project.gollum_wiki.store_as_wiki
-      data = params[:page][:formatted_data]
-      data = ReverseMarkdown.parse data
-    else
-      data = params[:page][:raw_data]
-    end
 
     if @page
-      @wiki.update_page(@page, @page.name, @page_format, data, commit)
+      @wiki.update_page(@page, @page.name, @page_format, params[:page][:raw_data], commit)
     else
-      @wiki.write_page(@page_name, @page_format, data, commit)
+      @wiki.write_page(@page_name, @page_format, params[:page][:raw_data], commit)
     end
 
     redirect_to :action => :show, :id => @page_name
@@ -203,7 +111,6 @@ class GollumPagesController < ApplicationController
   def project_repository_path
     return @project.gollum_wiki.git_path
   end
-
 
   def show_page(name)
     if page = @wiki.page(name)
@@ -240,9 +147,7 @@ class GollumPagesController < ApplicationController
     gollum_base_path = project_gollum_pages_path
     @wiki = Gollum::Wiki.new(git_path,
                             :base_path => gollum_base_path,
-                            :page_file_dir => wiki_dir,
-                            :file_class=>::GollumPagesController::MyGollumFile,
-                            :markup_classes => Hash.new(::GollumPagesController::MyMarkup))
+                            :page_file_dir => wiki_dir)
 
   end
 

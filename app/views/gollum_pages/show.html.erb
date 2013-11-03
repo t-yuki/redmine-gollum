@@ -1,11 +1,9 @@
 <div class="contextual">
-<% if @project.gollum_wiki.store_as_wiki %>
-  <%= link_to_if_authorized(
-        l(:button_raw),
-        {:action => 'raw', :id => @page_name},
-        :class => 'icon icon-file')
-  %>
-<% end %>
+<%= link_to_if_authorized(
+      l(:button_raw),
+      {:action => 'raw', :id => @page_name},
+      :class => 'icon icon-file')
+%>
 <% if @editable %>
   <%= link_to_if_authorized(
         l(:button_edit),

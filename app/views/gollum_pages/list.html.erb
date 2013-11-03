@@ -9,8 +9,8 @@
 </ul>
 
 <h3>Files</h3>
-<table>
-<% @files.each do |filename| %>
-  <tr><td><a href="<%= filename%>"><img height="30px" src='<%= filename %>'></a></td><td><%= filename %></td></tr>
+<ul>
+<% @files.each do |file| %>
+  <li> <%= link_to file.name, {:action=>:file, :id=>file.name}%></li>
 <% end %>
-</table>
+</ul>

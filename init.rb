@@ -39,12 +39,12 @@ Redmine::Plugin.register :redmine_gollum do
 
   project_module :gollum_pages do
     permission :view_gollum_pages,   :gollum_pages => [:index, :show, :file, :raw, :list]
-    permission :add_gollum_pages,    :gollum_pages => [:new, :create, :upload, :newpage]
+    permission :add_gollum_pages,    :gollum_pages => [:new, :create, :upload]
     permission :edit_gollum_pages,   :gollum_pages => [:edit, :update]
     permission :delete_gollum_pages, :gollum_pages => [:destroy]
 
     permission :manage_gollum_wiki, :gollum_wikis => [:index,:show, :create, :update]
   end
+
   menu :project_menu, :gollum_pages, { :controller => :gollum_pages, :action => :index }, :caption => 'Gollum', :before => :wiki, :param => :project_id
 end
-
