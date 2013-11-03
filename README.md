@@ -22,4 +22,6 @@ Be caution:
 - IT DOES NOT IMPORT YOUR CURRENT WIKI CONTENT
 - If you change the wiki path, it will NOT be moved
 - You should have a plugin .git repository in vendor/plugins/redmine-gollum/.git
-- Redmine Gollum will not warn you if you have files with the same name in one repo (but in different directories). Even if you set up different page files 	directory.
+- Redmine Gollum will not warn you if you have files with the same name in one repo (but in different directories). Even if you set up different page files
+  directory.
+

@@ -1,0 +1,16 @@
+
+<h2><%= l(:page_list) %></h2>
+
+<h3>Pages</h3>
+<ul>
+<% @pages.each do |page| %>
+  <li> <%= link_to page.name, {:action=>:show, :id=>page.name}%></li>
+<% end %>
+</ul>
+
+<h3>Files</h3>
+<table>
+<% @files.each do |filename| %>
+  <tr><td><a href="<%= filename%>"><img height="30px" src='<%= filename %>'></a></td><td><%= filename %></td></tr>
+<% end %>
+</table>

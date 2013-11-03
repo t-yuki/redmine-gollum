@@ -1,11 +1,40 @@
+<% if @project.gollum_wiki.store_as_wiki %>
+<div class="contextual">
+  <%= link_to_if_authorized(
+        l(:button_raw),
+        {:action => 'raw', :id => @page_name},
+        :class => 'icon icon-file')
+  %>
+</div>
 <h2><%= @page_name %></h2>
+<% end %>
+
 <%= form_for :page, :url => project_gollum_page_path(:id => @page_name), :html => { :method => "put" } do |f| -%>
+ <% if @project.gollum_wiki.use_ckeditor %>
+    <%= hidden_field_tag 'page[format]', @page_format %>
+ <% else %>
   <p>
     <%= label(:gollum_wiki, :markup_language) %>
     <%= select(:page, :format, options_for_select(Gollum::Markup.formats.each.collect {|ext, f| [f[:name], ext] }, @page_format), {:disabled => false}) %></p>
   </p>
+ <% end %>
 
-<%= f.text_area :raw_data, :class => "wiki-edit", :cols => 100, :row => 25 %>
+<% if @project.gollum_wiki.store_as_wiki %>
+  <%= f.text_area :formatted_data, :class => "wiki-edit", :id=> 'raw_data_id',  :cols => 100, :rows => 30 %>
+<% else %>
+  <%= f.text_area :raw_data, :class => "wiki-edit", :id=> 'raw_data_id',  :cols => 100, :rows => 30 %>
+<% end %>
+<!--%# < % = wikitoolbar_for 'raw_data_id' % > -->
+<% if @project.gollum_wiki.use_ckeditor %>
+  <% if Redmine::Plugin.installed?('redmine_ckeditor') %>
+     <% if  @project.gollum_wiki.use_ckeditor %>  
+       <%= gollum_include_ckeditor 'raw_data_id' %>
+     <% end %>
+  <% else %>
+     <div class="flash error">Alert: redmine_ckeditor plugin is not installed</div>
+  <% end %>
+<% end %>
+
 <p>
   <%= f.submit(l(:button_save)) %>
   <% #preview
@@ -15,5 +44,16 @@
   <%= link_to(l(:label_preview), previewScript) %>
 </p>
 <% end %>
+
+
 <div id="preview"></div>
 <%= javascript_include_tag "preview.js", :plugin => 'redmine_gollum' %>
+
+
+<% content_for :header_tags do %>
+<base href='<%= url_for :controller => 'gollum_pages', :action => 'index' %>' />
+<% end %>
+
+<% content_for :sidebar do %>
+  <%= render :partial => 'sidebar' %>
+<% end %>

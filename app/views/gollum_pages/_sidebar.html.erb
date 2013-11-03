@@ -1,3 +1,6 @@
 <h3><%= l(:Gollum) %></h3>
 
-<%= link_to l(:field_start_page), {:action => 'show'} %><br />
+<%= link_to l(:field_start_page), {:controller=>'gollum_pages', :action => 'show'} %><br />
+<%= link_to l(:upload), {:controller=>'gollum_pages', :action => 'upload'} %><br />
+<%= link_to l(:new_page), {:controller=>'gollum_pages', :action => 'newpage'} %><br />
+<%= link_to l(:list_pages), {:controller=>'gollum_pages', :action => 'list'} %><br />
