@@ -2,7 +2,7 @@ require 'redmine'
 
 Rails.configuration.to_prepare do
   require 'grit'
-  require 'gollum'
+  require 'gollum-lib'
   require_dependency 'redmine_gollum_patches/gollum_project_model_patch'
   require_dependency 'redmine_gollum_patches/gollum_projects_helper_patch'
   require_dependency 'redmine_gollum_patches/gollum_projects_controller_patch'

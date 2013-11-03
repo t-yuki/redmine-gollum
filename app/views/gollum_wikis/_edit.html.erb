@@ -7,7 +7,7 @@
   </p>
   <p>
     <%= label(:gollum_wiki, :markup_language) %>
-    <%= select(:gollum_wiki, :markup_language, options_for_select(Gollum::Page::FORMAT_NAMES.keys, @gollum_wiki.markup_language)) %></p>
+    <%= select(:gollum_wiki, :markup_language, options_for_select(Gollum::Markup.formats.each.collect {|ext, f| [f[:name], ext] }, @gollum_wiki.markup_language)) %>
   </p>
   <p>
     <%= label(:gollum_wiki, :page_files_directory) %>
